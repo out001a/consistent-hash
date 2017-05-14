@@ -1,0 +1,21 @@
+{
+    "name": "out001a/consistent-hash",
+    "description": "a consistent hash library implemented by PHP",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "out001a",
+            "email": "545827465@qq.com"
+        }
+    ],
+    "minimum-stability": "beta",
+    "require": {
+        "PHP":">=5.6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Out001a\\": "src/"
+        }
+    }
+}
