@@ -9,7 +9,6 @@
             "email": "545827465@qq.com"
         }
     ],
-    "minimum-stability": "beta",
     "require": {
         "PHP":">=5.6.0"
     },
