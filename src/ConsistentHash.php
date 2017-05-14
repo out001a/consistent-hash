@@ -1,6 +1,8 @@
 <?php
 namespace Out001a;
 
+use Closure;
+
 /**
  * Class ConsistentHash
  *
