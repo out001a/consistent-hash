@@ -16,8 +16,8 @@ class ConsistentHash
     private $_name      = '';
     private $_hashAlgo  = 'md5';
 
-    private $_circle    = [];           // [index => key]，按key值升序
-    private $_bucket    = [];           // [key => node]
+    private $_circle    = [];           // [index => hash]，按hash值升序
+    private $_bucket    = [];           // [hash => node]
     private $_capacity  = 1<<16;        // [0, 2 ^ 16 - 1]
     private $_virtNum   = (1<<8) - 1;
 
@@ -35,16 +35,16 @@ class ConsistentHash
     }
 
     /**
-     * 查找字符串映射到的节点
+     * 查找key映射到的节点
      *
-     * @param string $str
+     * @param string $key
      * @return string node
      */
-    public function lookup($str)
+    public function lookup($key)
     {
-        $obj_key = $this->_hash($str);
+        $key_hash = $this->_hash($key);
 
-        $index = $this->_locateInCircle($obj_key);
+        $index = $this->_locateInCircle($key_hash);
         if ($index >= count($this->_circle)) {
             $index = 0;
         }
@@ -53,9 +53,9 @@ class ConsistentHash
             return false;
         }
 
-        $node_key = $this->_circle[$index];
+        $node_hash = $this->_circle[$index];
 
-        return $this->_bucket[$node_key];
+        return $this->_bucket[$node_hash];
     }
 
     /**
@@ -65,26 +65,26 @@ class ConsistentHash
      */
     public function addNode($node)
     {
-        $this->_operateNode($node, function ($key) use ($node) {
-            $index = $this->_locateInCircle($key);
+        $this->_operateNode($node, function ($node_hash) use ($node) {
+            $index = $this->_locateInCircle($node_hash);
 
-            // key在circle内则不处理
-            if (isset($this->_circle[$index]) && $key == $this->_circle[$index]) {
+            // node_hash在circle内则不处理
+            if (isset($this->_circle[$index]) && $node_hash == $this->_circle[$index]) {
                 return;
             }
 
-            // add [index => key] to circle
+            // add [index => hash] to circle
             if ($index >= count($this->_circle)) {
-                $this->_circle[] = $key;
+                $this->_circle[] = $node_hash;
             } else {
                 for ($i = count($this->_circle); $i >= $index && $i > 0; $i--) {
                     $this->_circle[$i] = $this->_circle[$i-1];
                 }
-                $this->_circle[$index] = $key;
+                $this->_circle[$index] = $node_hash;
             }
 
-            // add [key => node] to bucket
-            $this->_bucket[$key] = $node;
+            // add [hash => node] to bucket
+            $this->_bucket[$node_hash] = $node;
         });
     }
 
@@ -95,11 +95,11 @@ class ConsistentHash
      */
     public function removeNode($node)
     {
-        $this->_operateNode($node, function ($key) {
-            $index = $this->_locateInCircle($key);
+        $this->_operateNode($node, function ($node_hash) {
+            $index = $this->_locateInCircle($node_hash);
 
-            // key不在circle内则不处理
-            if ($key != $this->_circle[$index]) {
+            // node_hash不在circle内则不处理
+            if ($node_hash != $this->_circle[$index]) {
                 return;
             }
 
@@ -109,13 +109,13 @@ class ConsistentHash
             }
 
             unset($this->_circle[$i]);
-            unset($this->_bucket[$key]);
+            unset($this->_bucket[$node_hash]);
         });
     }
 
-    private function _hash($str)
+    private function _hash($key)
     {
-        return hexdec(substr(call_user_func($this->_hashAlgo, $str), 0, 8)) % $this->_capacity;
+        return hexdec(substr(call_user_func($this->_hashAlgo, $key), 0, 8)) % $this->_capacity;
     }
 
     private function _operateNode($node, Closure $operate)
@@ -129,22 +129,22 @@ class ConsistentHash
     /**
      * 定位哈希串在circle中的位置
      *
-     * @param $key
+     * @param $hash_str
      */
-    private function _locateInCircle($key)
+    private function _locateInCircle($hash_str)
     {
         $l = 0;
         $h = count($this->_circle) - 1;
         while ($l <= $h) {
             $m = intval(($l + $h) / 2);
 
-            if ($this->_circle[$m] == $key) {
+            if ($this->_circle[$m] == $hash_str) {
                 return $m;
             }
-            if ($this->_circle[$m] > $key) {
+            if ($this->_circle[$m] > $hash_str) {
                 $h = $m - 1;
             }
-            if ($this->_circle[$m] < $key) {
+            if ($this->_circle[$m] < $hash_str) {
                 $l = $m + 1;
             }
         }
