@@ -1,5 +1,7 @@
 # consistent hash
 
+https://packagist.org/packages/out001a/consistent-hash
+
 ## Usage
 
 ```bash
